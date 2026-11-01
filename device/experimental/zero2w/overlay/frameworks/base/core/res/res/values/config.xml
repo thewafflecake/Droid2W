@@ -3,4 +3,10 @@
     <bool name="config_showNavigationBar">true</bool>
     <bool name="config_voice_capable">false</bool>
     <bool name="config_sms_capable">false</bool>
+    <string-array name="networkAttributes" translatable="false">
+        <item>"wifi,1,1,1,-1,true"</item>
+    </string-array>
+    <string-array name="radioAttributes" translatable="false">
+        <item>"1,1"</item>
+    </string-array>
 </resources>

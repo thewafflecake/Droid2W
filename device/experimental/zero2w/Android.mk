@@ -7,6 +7,12 @@ LOCAL_MODULE_TAGS := optional
 LOCAL_SRC_FILES := driver_cmd_zero2w.c
 include $(BUILD_STATIC_LIBRARY)
 
+include $(CLEAR_VARS)
+LOCAL_MODULE := libhealthd.zero2w
+LOCAL_SRC_FILES := healthd_zero2w.cpp
+LOCAL_C_INCLUDES := system/core/healthd
+include $(BUILD_STATIC_LIBRARY)
+
 # Stock KitKat searches this exact driver filename before scanning vendor names.
 # It deliberately excludes libGLES_android.so from the generic wildcard search.
 zero2w_egl_alias := $(TARGET_OUT)/lib/egl/libGLES.so

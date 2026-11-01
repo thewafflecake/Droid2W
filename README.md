@@ -42,6 +42,7 @@ power the board through **PWR IN** and connect input devices through USB OTG.
 - [Build guide](docs/BUILD.md)
 - [Architecture and known limitations](docs/ARCHITECTURE.md)
 - [Roadmap](docs/ROADMAP.md)
+- [Basic apps and runtime update](docs/RUNTIME-UPDATE.md)
 - [Русское описание](docs/README.ru.md)
 - [Third-party notices](NOTICE.md)
 

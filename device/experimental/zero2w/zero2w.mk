@@ -5,6 +5,8 @@ $(call inherit-product, frameworks/webview/chromium/chromium.mk)
 
 PRODUCT_PACKAGES += \
     InputDevices Keyguard LatinIME Launcher2 Provision Settings SystemUI \
+    Gallery Browser Calculator DeskClock Calendar CalendarProvider Music \
+    DocumentsUI ExternalStorageProvider DownloadProvider DownloadProviderUi CertInstaller KeyChain \
     audio.primary.default audio_policy.default power.default \
     gralloc.default libGLES_android librs_jni local_time.default e2fsck \
     wpa_supplicant wpa_cli dhcpcd dhcpcd-run-hooks 20-dns.conf 95-configured
@@ -24,6 +26,9 @@ PRODUCT_COPY_FILES += \
 PRODUCT_COPY_FILES += $(foreach file,$(wildcard device/experimental/zero2w/modules/*.ko),$(file):system/lib/modules/$(notdir $(file)))
 PRODUCT_COPY_FILES += $(foreach file,$(wildcard device/experimental/zero2w/firmware/brcm/*),$(file):system/etc/firmware/brcm/$(notdir $(file)))
 PRODUCT_COPY_FILES += $(foreach file,$(wildcard device/experimental/zero2w/firmware/copyright device/experimental/zero2w/firmware/source-revision.txt),$(file):system/etc/firmware/$(notdir $(file)))
+
+# Keep framework sound resources complete, even while audio hardware is a stub.
+PRODUCT_COPY_FILES += $(foreach name,Effect_Tick KeypressStandard KeypressSpacebar KeypressDelete KeypressReturn KeypressInvalid Lock Unlock,frameworks/base/data/sounds/effects/ogg/$(name).ogg:system/media/audio/ui/$(name).ogg)
 
 DEVICE_PACKAGE_OVERLAYS := device/experimental/zero2w/overlay
 PRODUCT_LOCALES := en_US ru_RU

@@ -9,3 +9,5 @@ dalvik.vm.heapmaxfree=2m
 persist.sys.dalvik.vm.lib=libdvm.so
 ro.opengles.version=65537
 wifi.interface=wlan0
+# Force complete CPU-drawn window updates; avoid stale partial-update contents.
+debug.sf.zero2w_full_redraw=1

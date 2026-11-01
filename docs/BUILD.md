@@ -39,6 +39,7 @@ public `adbkey.pub` is staged in the device image; never upload either key here.
 ```sh
 python3 prepare-device.py --adb-public-key "$HOME/.android/adbkey.pub"
 python3 prepare-android.py
+python3 prepare-runtime.py
 python3 prepare-wifi-firmware.py
 bash fetch-boot-firmware.sh
 bash build-network-kernel.sh
