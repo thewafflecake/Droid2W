@@ -1,0 +1,17 @@
+# Droid2W: experimental Android 4.4.4, 32-bit kernel.
+arm_64bit=0
+kernel=kernel7.img
+device_tree=bcm2710-rpi-zero-2-w.dtb
+initramfs ramdisk.img followkernel
+gpu_mem=64
+disable_overscan=1
+hdmi_force_hotplug=1
+hdmi_group=1
+hdmi_mode=4
+framebuffer_width=1280
+framebuffer_height=720
+framebuffer_depth=32
+framebuffer_ignore_alpha=1
+enable_uart=1
+dtoverlay=disable-bt
+dtoverlay=dwc2,dr_mode=host

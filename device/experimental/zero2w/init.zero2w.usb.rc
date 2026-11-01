@@ -1,0 +1,12 @@
+# USB ADB bring-up through FunctionFS, independent of Android's graphical UI.
+# g_ffs is built into the kernel and configured by kernel command-line options.
+on init
+    mkdir /dev/usb-ffs 0770 shell shell
+    mkdir /dev/usb-ffs/adb 0770 shell shell
+    mount functionfs adb /dev/usb-ffs/adb uid=2000,gid=2000
+
+on boot
+    # The text framebuffer console otherwise overwrites Android's display.
+    # UART and kernel logs remain available for diagnostics.
+    write /sys/class/vtconsole/vtcon1/bind 0
+    start adbd

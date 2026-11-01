@@ -1,0 +1,11 @@
+ro.config.low_ram=true
+ro.sf.lcd_density=160
+dalvik.vm.heapstartsize=8m
+dalvik.vm.heapgrowthlimit=64m
+dalvik.vm.heapsize=128m
+dalvik.vm.heaptargetutilization=0.75
+dalvik.vm.heapminfree=512k
+dalvik.vm.heapmaxfree=2m
+persist.sys.dalvik.vm.lib=libdvm.so
+ro.opengles.version=65537
+wifi.interface=wlan0

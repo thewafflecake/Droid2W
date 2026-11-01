@@ -1,0 +1,3 @@
+/dev/graphics/fb0 0660 root graphics
+/dev/binder 0666 root root
+/dev/ashmem 0666 root root
