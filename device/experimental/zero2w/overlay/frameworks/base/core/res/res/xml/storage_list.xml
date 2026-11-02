@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <StorageList xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- /data/media is exported by the existing FUSE sdcard service. -->
+    <!-- Legacy alias; emulated user paths are derived from the init environment. -->
     <storage android:mountPoint="/storage/sdcard0"
              android:storageDescription="@string/storage_internal"
              android:primary="true"

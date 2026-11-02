@@ -41,6 +41,18 @@ if old in text:
     status.write_text(text)
 assert new in text
 
+# This board has no phone package to supply the radio process permissions.
+# Keep the Wi-Fi-only status activity in Settings' normal system process.
+manifest = root / 'packages/apps/Settings/AndroidManifest.xml'
+text = manifest.read_text()
+start = text.index('<activity android:name=".deviceinfo.Status"')
+end = text.index('</activity>', start)
+activity = text[start:end]
+activity = activity.replace('android:process="com.android.phone"',
+                            'android:process="com.android.settings"')
+text = text[:start] + activity + text[end:]
+manifest.write_text(text)
+
 clock = root / 'frameworks/base/core/jni/android_os_SystemClock.cpp'
 text = clock.read_text()
 old_clock = '''    if(fd < 0) {

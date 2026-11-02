@@ -45,7 +45,9 @@ per-interface socket lives in a separate directory. DHCP uses KitKat dhcpcd.
   `debug.sf.zero2w_full_redraw=1`. Canvas receives a full-window dirty rectangle,
   avoiding dependence on buffer copyback history. This is a compatibility
   workaround under evaluation, not a claimed GPU or frame-rate improvement.
-- Wi-Fi-only Settings skips PhoneFactory access in the device status screen.
+- Wi-Fi-only Settings skips PhoneFactory access in the device status screen
+  and runs that activity in the Settings process, avoiding the absent phone
+  package's radio-process permissions.
 - If `/dev/alarm` is absent, SystemClock falls back to `settimeofday` for wall
   clock changes. The kernel still requires CAP_SYS_TIME. Alarm delivery continues
   to use KitKat's existing Java fallback; suspend/wakeup alarms are not validated.
@@ -53,8 +55,12 @@ per-interface socket lives in a separate directory. DHCP uses KitKat dhcpcd.
   gadget transport when the controller is in host mode. TCP transport and key
   authentication remain unchanged; peripheral mode continues to support USB ADB.
 
-The storage overlay describes the FUSE `/storage/sdcard0` volume as emulated,
-matching the existing sdcard service rather than an absent physical vold volume.
+The storage overlay declares emulated storage. Init exports both
+`EMULATED_STORAGE_SOURCE=/mnt/shell/emulated` and
+`EMULATED_STORAGE_TARGET=/storage/emulated`; sdcard uses `-l` to export
+`/data/media` with user IDs at the top level. Legacy paths point to user 0.
+Omitting the environment while declaring storage emulated makes Zygote's
+application forks abort, leaving Android stuck during startup.
 
 Basic application selection includes legacy Gallery, Browser, Calculator,
 DeskClock, Calendar, Music, DocumentsUI and Downloads, with their providers.
