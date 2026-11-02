@@ -1,13 +1,13 @@
 # Droid2W
 
-![Screenshot](1sc.png)
-
 Experimental Android ports for the **Raspberry Pi Zero 2 W**.
 
 The current implementation targets **AOSP Android 4.4.4 (KitKat)** with a
 32-bit Raspberry Pi Linux 5.10 kernel. This repository contains the device
 configuration, source preparation scripts and build/image assembly tools;
 it does not vendor the full Android or Linux source trees.
+
+![Screenshot](1sc.png)
 
 ## Hardware status
 
