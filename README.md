@@ -1,5 +1,7 @@
 # Droid2W
 
+![Screenshot](1sc.png)
+
 Experimental Android ports for the **Raspberry Pi Zero 2 W**.
 
 The current implementation targets **AOSP Android 4.4.4 (KitKat)** with a
