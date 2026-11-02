@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Reserve room for the clock above the unlock challenge at 320x480. -->
+    <dimen name="keyguard_security_height">250dp</dimen>
+    <dimen name="widget_big_font_size">56dp</dimen>
+    <dimen name="kg_status_clock_font_size">56dp</dimen>
+</resources>

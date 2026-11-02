@@ -90,3 +90,31 @@ if old in text:
     cgroup.write_text(text)
 assert 'ns_capable(tcred->user_ns, CAP_SYS_NICE)' in text
 print('Prepared Android common cgroup scheduling compatibility.')
+
+# Page flips must not reallocate/reconfigure the firmware framebuffer.
+framebuffer = kernel / 'drivers/video/fbdev/bcm2708_fb.c'
+text = framebuffer.read_text()
+old_pan = '''\tinfo->var.xoffset = var->xoffset;
+\tinfo->var.yoffset = var->yoffset;
+\tresult = bcm2708_fb_set_par(info);
+'''
+new_pan = '''\t/* Droid2W: a page flip changes only the scanout offset. */
+\tu32 offset[2] = { var->xoffset, var->yoffset };
+\tstruct bcm2708_fb *fb = to_bcm2708(info);
+
+\tset_display_num(fb);
+\tresult = rpi_firmware_property(fb->fbdev->fw,
+\t\tRPI_FIRMWARE_FRAMEBUFFER_SET_VIRTUAL_OFFSET,
+\t\toffset, sizeof(offset));
+\tif (!result && (offset[0] != var->xoffset ||
+\t\t\t offset[1] != var->yoffset))
+\t\tresult = -EINVAL;
+\tif (!result) {
+\t\tinfo->var.xoffset = offset[0];
+\t\tinfo->var.yoffset = offset[1];
+\t}
+'''
+if old_pan in text:
+    assert text.count(old_pan) == 1
+    framebuffer.write_text(text.replace(old_pan, new_pan))
+assert new_pan in framebuffer.read_text()

@@ -11,3 +11,5 @@ ro.opengles.version=65537
 wifi.interface=wlan0
 # Force complete CPU-drawn window updates; avoid stale partial-update contents.
 debug.sf.zero2w_full_redraw=1
+# Pair with the kernel's offset-only framebuffer pan implementation.
+debug.gralloc.zero2w_pan=1

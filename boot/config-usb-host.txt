@@ -12,6 +12,7 @@ framebuffer_width=1280
 framebuffer_height=720
 framebuffer_depth=32
 framebuffer_ignore_alpha=1
+framebuffer_swap=0
 enable_uart=1
 dtoverlay=disable-bt
 dtoverlay=dwc2,dr_mode=host

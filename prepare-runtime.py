@@ -3,6 +3,112 @@
 from pathlib import Path
 
 root = Path(__file__).resolve().parent / 'aosp'
+
+# Pair with the framebuffer offset-only page-flip kernel adaptation.
+framebuffer = root / 'hardware/libhardware/modules/gralloc/framebuffer.cpp'
+text = framebuffer.read_text()
+old_post = '        if (ioctl(m->framebuffer->fd, FBIOPUT_VSCREENINFO, &m->info) == -1) {'
+new_post = '''        // Droid2W: mode-setting on every mouse frame disrupts scanout.
+        char usePan[PROPERTY_VALUE_MAX];
+        property_get("debug.gralloc.zero2w_pan", usePan, "0");
+        const unsigned long request = usePan[0] == '1'
+                ? FBIOPAN_DISPLAY : FBIOPUT_VSCREENINFO;
+        if (ioctl(m->framebuffer->fd, request, &m->info) == -1) {'''
+if old_post in text:
+    assert text.count(old_post) == 1
+    text = text.replace(old_post, new_post)
+if '#include <cutils/properties.h>' not in text:
+    text = '#include <cutils/properties.h>\n' + text
+framebuffer.write_text(text)
+assert new_post in framebuffer.read_text()
+
+text = framebuffer.read_text()
+old_current = '        m->currentBuffer = buffer;'
+new_current = '''        // Droid2W: retire the previous scanout before its buffer is reused.
+        if (usePan[0] == '1') {
+            unsigned int crtc = 0;
+            if (ioctl(m->framebuffer->fd, FBIO_WAITFORVSYNC, &crtc) == -1) {
+                ALOGE("FBIO_WAITFORVSYNC failed: %s", strerror(errno));
+                return -errno;
+            }
+        }
+        m->currentBuffer = buffer;'''
+if '// Droid2W: retire the previous scanout' not in text:
+    assert text.count(old_current) == 1
+    framebuffer.write_text(text.replace(old_current, new_current))
+
+# PixelFlinger has no FBO capture. Snapshot the active framebuffer page before
+# PNG encoding, rather than encoding directly from memory reused by scanout.
+screencap = root / 'frameworks/base/cmds/screencap/screencap.cpp'
+text = screencap.read_text()
+capture_marker = '// Droid2W stable framebuffer capture.'
+if capture_marker not in text:
+    text = text.replace('#include <errno.h>', '#include <errno.h>\n#include <utils/Vector.h>\n#include <string.h>\n#include <cutils/properties.h>')
+    helper = '''// Droid2W stable framebuffer capture.
+static bool captureZero2wFramebuffer(Vector<uint8_t>& pixels,
+        uint32_t* w, uint32_t* s, uint32_t* h, uint32_t* f) {
+    int fb = open("/dev/graphics/fb0", O_RDONLY);
+    if (fb < 0) return false;
+    fb_var_screeninfo info;
+    fb_fix_screeninfo fixed;
+    uint32_t bytespp;
+    if (ioctl(fb, FBIOGET_VSCREENINFO, &info) ||
+            ioctl(fb, FBIOGET_FSCREENINFO, &fixed) ||
+            vinfoToPixelFormat(info, &bytespp, f) != NO_ERROR ||
+            fixed.line_length % bytespp || !fixed.smem_len) {
+        close(fb);
+        return false;
+    }
+    void* mapping = mmap(0, fixed.smem_len, PROT_READ, MAP_SHARED, fb, 0);
+    if (mapping == MAP_FAILED) { close(fb); return false; }
+    *w = info.xres;
+    *h = info.yres;
+    *s = fixed.line_length / bytespp;
+    const size_t size = size_t(fixed.line_length) * *h;
+    pixels.resize(size);
+    bool success = false;
+    for (int attempt = 0; attempt < 12; ++attempt) {
+        unsigned int crtc = 0;
+        if (ioctl(fb, FBIO_WAITFORVSYNC, &crtc) ||
+                ioctl(fb, FBIOGET_VSCREENINFO, &info)) break;
+        const size_t offset = size_t(info.yoffset) * fixed.line_length +
+                size_t(info.xoffset) * bytespp;
+        if (offset > fixed.smem_len || size > fixed.smem_len - offset) break;
+        memcpy(pixels.editArray(), static_cast<const uint8_t*>(mapping) + offset, size);
+        fb_var_screeninfo after;
+        if (ioctl(fb, FBIOGET_VSCREENINFO, &after)) break;
+        if (info.xoffset == after.xoffset && info.yoffset == after.yoffset) {
+            success = true;
+            break;
+        }
+    }
+    munmap(mapping, fixed.smem_len);
+    close(fb);
+    return success;
+}
+
+'''
+    text = text.replace('int main(int argc, char** argv)\n', helper + 'int main(int argc, char** argv)\n')
+    anchor = '    ScreenshotClient screenshot;\n'
+    text = text.replace(anchor, '''    Vector<uint8_t> stablePixels;
+    char hardware[PROPERTY_VALUE_MAX];
+    property_get("ro.hardware", hardware, "");
+    const bool captureFramebuffer = !strcmp(hardware, "zero2w") &&
+            displayId == ISurfaceComposer::eDisplayIdMain;
+''' + anchor)
+    anchor = '    if (display != NULL && screenshot.update(display) == NO_ERROR) {'
+    assert text.count(anchor) == 1
+    text = text.replace(anchor, '''    if (captureFramebuffer) {
+        if (captureZero2wFramebuffer(stablePixels, &w, &s, &h, &f)) {
+            base = stablePixels.array();
+            size = stablePixels.size();
+        }
+    } else if (display != NULL && screenshot.update(display) == NO_ERROR) {''')
+    text = text.replace('            b.setPixels((void*)base);', '''            b.setPixels((void*)base);
+            if (f == PIXEL_FORMAT_RGBX_8888 || f == PIXEL_FORMAT_RGB_565)
+                b.setAlphaType(kOpaque_SkAlphaType);''')
+    screencap.write_text(text)
+
 surface = root / 'frameworks/native/libs/gui/Surface.cpp'
 text = surface.read_text()
 marker = '// Droid2W CPU window redraw compatibility.'
