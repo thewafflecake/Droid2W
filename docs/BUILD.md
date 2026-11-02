@@ -48,6 +48,9 @@ bash check-binder-abi.sh
 
 The network kernel script also prepares the Binder/logger patches and stages
 the three matching Wi-Fi modules. Do not mix modules from another kernel build.
+For a distributable image, use `python3 prepare-device.py --no-authorized-keys`
+instead of embedding a developer's public key. New ADB hosts then require
+approval on the device; key authentication remains enabled.
 
 ## Android
 
@@ -66,32 +69,54 @@ under `aosp/out/target/product/zero2w/`.
 On the Linux host:
 
 ```sh
-python3 assemble-image.py --variant usb-adb
+python3 assemble-image.py --variant usb-host
 ```
 
-The assembler writes a regular image file and checksums under `artifacts-usb-adb/`;
+The assembler writes a regular image file and checksums under `artifacts-usb-host/`;
 it does not flash a device and refuses to overwrite an existing image. It needs
 the boot firmware, kernel, device trees and Android images from previous steps.
 The current partition layout needs a card larger than the resulting ~2.08 GB image.
 Use a 4 GB or larger card. Image creation does not prove hardware compatibility.
 
-The default profile uses USB ADB. After verifying Wi-Fi ADB, select the host
-profile by copying `boot/config-usb-host.txt` to `boot/config.txt` **before image
-assembly**, or copying its contents to `config.txt` on the card's boot partition.
+The `usb-host` variant selects the host profile automatically. The `usb-adb`
+variant selects the peripheral profile; `original` retains `boot/config.txt`.
+You can also copy a profile's contents to `config.txt` on the card's boot partition.
 Power down before rewiring. Disconnect the PC data cable for host mode; power
 through PWR IN and attach input devices through OTG. To restore USB ADB use
 `config-usb-adb.txt` as `config.txt`.
 
-On a running development board, the following logical display settings were tested:
+The device defaults now select a 320x480 logical display at 160 dpi. On a running
+development board, the same settings were tested with:
 
 ```sh
 adb shell wm size 320x480
 adb shell wm density 160
 ```
 
-Connect Wi-Fi through Android Settings. Enable TCP ADB only on your trusted
-network, verify the connection before switching USB role, and keep ADB key
-authentication enabled. Do not publish your address or Wi-Fi credentials.
+Connect Wi-Fi through Android Settings. Authenticated TCP ADB listens on port
+5556 for use alongside USB host input. Connect with `adb connect <board-ip>:5556`
+and approve the computer's key on the device. Keep this legacy development image
+on a trusted network.
+
+## Incremental public image build on the configured server
+
+Once the legacy container, sources, boot firmware and matching Wi-Fi modules
+are prepared, run on the Linux host:
+
+```sh
+bash build-public-image.sh artifacts-public-YYYYMMDD > public-image-build.log 2>&1
+python3 verify-public-image.py artifacts-public-YYYYMMDD
+```
+
+The script builds the kernel and Android images, selects USB host, omits
+preauthorized ADB keys, checks the staged data and filesystems, and creates
+`.img.gz` files with SHA-256 sums. It refuses to overwrite existing image files.
+Before packaging, host `e2fsck` normalizes the legacy `make_ext4fs` inode-bitmap
+padding in the generated partition files and a read-only check must pass.
+`public-image-status.txt` records the current stage. View progress with
+`tail -n 40 -f public-image-build.log`. Verification compares packaged partition
+contents, checks boot-file permissions and confirms the updated graphics files.
+It does not replace a boot test of the fresh image on hardware.
 
 This guide captures the development workflow; clean-checkout reproducibility
 and a freshly assembled image remain to be independently tested.

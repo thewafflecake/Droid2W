@@ -11,15 +11,18 @@ import subprocess
 
 root = Path(__file__).resolve().parent
 parser = argparse.ArgumentParser()
-parser.add_argument('--variant', choices=('original', 'usb-adb'), default='original')
-variant = parser.parse_args().variant
+parser.add_argument('--variant', choices=('original', 'usb-adb', 'usb-host'), default='original')
+parser.add_argument('--output-dir', type=Path)
+args = parser.parse_args()
+variant = args.variant
 product = root / 'aosp/out/target/product/zero2w'
 boot = root / 'boot'
 kernel = root / 'kernel-out/arch/arm/boot'
-output = root / ('artifacts-usb-adb' if variant == 'usb-adb' else 'artifacts')
+output = args.output_dir or root / ('artifacts-' + variant if variant != 'original' else 'artifacts')
 output.mkdir(exist_ok=True)
 assert not output.is_symlink(), 'Refuse a symlink output directory'
-image = output / ('zero2w-kitkat-4.4.4-usb-adb-experimental.img' if variant == 'usb-adb' else 'zero2w-kitkat-4.4.4-experimental.img')
+suffix = '-' + variant if variant != 'original' else ''
+image = output / ('zero2w-kitkat-4.4.4' + suffix + '-experimental.img')
 assert not image.exists(), 'Refuse to overwrite an existing image'
 required = {
     'kernel7.img': kernel / 'zImage',
@@ -49,6 +52,10 @@ with fat.open('xb') as stream:
     stream.truncate(64 * 1024 * 1024)
 subprocess.run(['mkfs.vfat', '-F', '32', '-n', 'KITKATBOOT', str(fat)], check=True)
 for path in sorted(boot.iterdir()):
+    if path.name == 'config.txt' and variant != 'original':
+        path = boot / ('config-' + variant + '.txt')
+        subprocess.run(['mcopy', '-i', str(fat), str(path), '::/config.txt'], check=True)
+        continue
     subprocess.run(['mcopy', '-s', '-i', str(fat), str(path), '::/'], check=True)
 
 # MBR: 64 MiB boot, 768 MiB system, 1024 MiB data, 128 MiB cache.

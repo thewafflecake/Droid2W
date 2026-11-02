@@ -1,5 +1,8 @@
 ro.config.low_ram=true
 ro.sf.lcd_density=160
+ro.config.size_override=320,480
+# Authenticated network ADB while the USB controller serves keyboard/mouse.
+service.adb.tcp.port=5556
 dalvik.vm.heapstartsize=8m
 dalvik.vm.heapgrowthlimit=64m
 dalvik.vm.heapsize=128m

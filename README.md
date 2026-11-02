@@ -27,7 +27,9 @@ Verified on one physical Zero 2 W during development:
 
 These results describe an incrementally updated development card. A clean
 image rebuilt from this repository still needs independent hardware validation.
-No downloadable release or performance claim is made by this initial commit.
+Experimental images are published under [Releases](https://github.com/thewafflecake/Droid2W/releases).
+Check the exact release's hardware-test status before flashing; see the
+[installation guide](docs/FLASHING.md). No performance claim is made.
 
 ## USB modes
 
