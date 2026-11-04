@@ -5,6 +5,7 @@ import gzip
 from pathlib import Path
 import struct
 import subprocess
+from ramdisk_checks import validate_init_files
 
 parser = argparse.ArgumentParser()
 parser.add_argument('directory', type=Path)
@@ -58,9 +59,7 @@ while pos < len(archive):
     if name == 'TRAILER!!!':
         break
     files[name.removeprefix('./')] = (mode, uid, gid, data)
-for name in ('init.rc', 'init.zero2w.rc', 'init.zero2w.usb.rc'):
-    mode, uid, gid, data = files[name]
-    assert uid == 0 and not mode & 0o022, (name, oct(mode), uid, gid)
+validate_init_files(files)
 assert not files['adb_keys'][3].strip(), 'Preauthorized ADB key in public ramdisk'
 assert b'ro.adb.secure=1' in files['default.prop'][3]
 assert b'EMULATED_STORAGE_SOURCE /mnt/shell/emulated' in files['init.zero2w.rc'][3]
