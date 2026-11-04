@@ -1,0 +1,287 @@
+--- a/opengl/Android.mk
++++ b/opengl/Android.mk
+@@ -131,6 +131,7 @@
+ 
+ include $(CLEAR_VARS)
+ LOCAL_MODULE := libGLES_bcm2708
++LOCAL_LDFLAGS := -Wl,-Bsymbolic
+ LOCAL_MODULE_TAGS:= optional
+ LOCAL_MODULE_PATH:= $(TARGET_OUT_VENDOR_SHARED_LIBRARIES)/egl
+ LOCAL_CFLAGS := $(TARGET_BOARD_OPENGL_CFLAGS)
+@@ -140,7 +141,7 @@
+ 			$(vg_src_files) \
+ 			$(gles_src_files) \
+ 			$(egl_src_files)
+-LOCAL_SHARED_LIBRARIES := liblog libvc4 libhardware
++LOCAL_SHARED_LIBRARIES := liblog libvc4 libhardware libsync
+ include $(BUILD_SHARED_LIBRARY)
+ 
+ ########################################################################
+--- a/opengl/interface/khronos/ext/egl_khr_image_client.c
++++ b/opengl/interface/khronos/ext/egl_khr_image_client.c
+@@ -1,3 +1,6 @@
++/* Droid2W legacy pixel-format constants removed from KitKat public headers. */
++#define HAL_PIXEL_FORMAT_RGBA_5551 6
++#define HAL_PIXEL_FORMAT_RGBA_4444 7
+ /*
+ Copyright (c) 2012, Broadcom Europe Ltd
+ All rights reserved.
+@@ -48,7 +51,7 @@
+ #endif
+ 
+ #if defined(ANDROID) && defined(KHRN_BCG_ANDROID)
+-#include <gralloc_priv.h>
++/* Private gralloc layouts are not used by the offscreen probe. */
+ #include <hardware/hardware.h>
+ #include <hardware/gralloc.h>
+ #include "middleware/khronos/common/2708/khrn_prod_4.h"
+@@ -60,7 +63,7 @@
+ #include <hardware/hardware.h>
+ #include <system/graphics.h>
+ #include <system/window.h>
+-#include <gralloc_priv.h>
++/* Private gralloc layouts are not used by the offscreen probe. */
+ #include <utils/Log.h>
+ #include "host_applications/linux/libs/bcm_host/include/bcm_host.h"
+ 
+@@ -126,7 +129,7 @@
+     return vc_handle;
+ }
+ 
+-private_handle_t* gralloc_private_handle_from_client_buffer(EGLClientBuffer buffer) {
++gralloc_private_handle_t* gralloc_private_handle_from_client_buffer(EGLClientBuffer buffer) {
+     bcm_host_init();
+ 
+     gralloc_private_handle_t* gralloc_handle = (gralloc_private_handle_t*) malloc(sizeof(gralloc_private_handle_t));
+--- a/opengl/interface/khronos/egl/egl_client_surface.c
++++ b/opengl/interface/khronos/egl/egl_client_surface.c
+@@ -47,6 +47,9 @@
+ #endif
+ 
+ #include <stdlib.h>
++#ifdef ANDROID
++#include <system/window.h>
++#endif
+ 
+ 
+ /*
+@@ -337,6 +340,10 @@
+ 
+    /* TODO: respect largest_pbuffer? */
+ 
++#ifdef ANDROID
++   surface->d2w_readback_window = NULL;
++   surface->d2w_readback_pixels = NULL;
++#endif
+    surface->name = name;
+    surface->type = type;
+ 
+@@ -544,6 +551,10 @@
+ 
+    /* TODO: respect largest_pbuffer? */
+ 
++#ifdef ANDROID
++   surface->d2w_readback_window = NULL;
++   surface->d2w_readback_pixels = NULL;
++#endif
+    surface->name = name;
+    surface->type = PBUFFER;
+ 
+@@ -636,6 +647,14 @@
+ 
+    vcos_log_trace("egl_surface_free");
+ 
++#ifdef ANDROID
++   if (surface->d2w_readback_window) {
++      surface->d2w_readback_window->common.decRef(&surface->d2w_readback_window->common);
++      surface->d2w_readback_window = NULL;
++   }
++   free(surface->d2w_readback_pixels);
++   surface->d2w_readback_pixels = NULL;
++#endif
+    thread = CLIENT_GET_THREAD_STATE();
+ 
+    if( surface->type == WINDOW ) {
+--- a/opengl/interface/khronos/egl/egl_client_surface.h
++++ b/opengl/interface/khronos/egl/egl_client_surface.h
+@@ -53,6 +53,10 @@
+ 
+ typedef struct {
+    EGLSurface name;
++#ifdef ANDROID
++   struct ANativeWindow *d2w_readback_window;
++   unsigned char *d2w_readback_pixels;
++#endif
+ 
+    /*
+       type
+--- a/opengl/interface/khronos/egl/egl_client.c
++++ b/opengl/interface/khronos/egl/egl_client.c
+@@ -165,6 +165,100 @@
+ #include "interface/khronos/egl/egl_client_cr.c"
+ 
+ VCOS_LOG_CAT_T egl_client_log_cat;
++#ifdef ANDROID
++#include <system/window.h>
++#include <sync/sync.h>
++#include "interface/khronos/include/GLES2/gl2.h"
++#include <unistd.h>
++/* Bring-up path: GPU renders to a pbuffer, CPU copies into BufferQueue. */
++static EGLBoolean d2w_readback_present(EGL_SURFACE_T *surface)
++{
++   ANativeWindow *window = surface->d2w_readback_window;
++   struct ANativeWindowBuffer *buffer = NULL;
++   int fence = -1;
++   void *address = NULL;
++   const gralloc_module_t *gralloc = NULL;
++   int width = surface->width, height = surface->height;
++   GLint old_pack = 4, old_fbo = 0;
++   int result, y;
++   if (!surface->d2w_readback_pixels) {
++      if (posix_memalign((void **)&surface->d2w_readback_pixels, 4096, (size_t)width * height * 4)) surface->d2w_readback_pixels = NULL;
++      if (!surface->d2w_readback_pixels) return EGL_FALSE;
++   }
++   if (hw_get_module(GRALLOC_HARDWARE_MODULE_ID, (const hw_module_t **)&gralloc))
++      return EGL_FALSE;
++   /* Read the default draw framebuffer even if the application left an FBO bound. */
++   glGetIntegerv(GL_PACK_ALIGNMENT, &old_pack);
++   glGetIntegerv(GL_FRAMEBUFFER_BINDING, &old_fbo);
++   glBindFramebuffer(GL_FRAMEBUFFER, 0);
++   glPixelStorei(GL_PACK_ALIGNMENT, 4);
++   {
++      static int once;
++      if(!once++) ALOGI("Droid2W first readback %dx%d renderer=%s version=%s old_fbo=%d pack=%d glerror=%x",width,height,glGetString(GL_RENDERER),glGetString(GL_VERSION),old_fbo,old_pack,glGetError());
++   }
++   {
++      static int once;
++      glFinish();
++      if(!once++) ALOGI("Droid2W first finish completed");
++   }
++   glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, surface->d2w_readback_pixels);
++   glPixelStorei(GL_PACK_ALIGNMENT, old_pack);
++   glBindFramebuffer(GL_FRAMEBUFFER, old_fbo);
++   result = window->dequeueBuffer(window, &buffer, &fence);
++   if (result || !buffer) return EGL_FALSE;
++   if (fence >= 0) {
++      result = sync_wait(fence, 2000);
++      if (result) {
++         window->cancelBuffer(window, buffer, fence);
++         return EGL_FALSE;
++      }
++      close(fence);
++   }
++   { static int once; if(!once++) ALOGI("D2W native buffer %dx%d stride=%d format=%d", buffer->width,buffer->height,buffer->stride,buffer->format); }
++   if (buffer->width != width || buffer->height != height ||
++       buffer->stride < width ||
++       (buffer->format != HAL_PIXEL_FORMAT_RGBA_8888 && buffer->format != HAL_PIXEL_FORMAT_RGB_565)) {
++      window->cancelBuffer(window, buffer, -1);
++      return EGL_FALSE;
++   }
++   result = gralloc->lock(gralloc, buffer->handle, GRALLOC_USAGE_SW_WRITE_OFTEN,
++                          0, 0, width, height, &address);
++   if (result || !address) {
++      window->cancelBuffer(window, buffer, -1);
++      return EGL_FALSE;
++   }
++   for (y = 0; y < height; ++y) {
++      const unsigned char *src = surface->d2w_readback_pixels + (size_t)(height - 1 - y) * width * 4;
++      if (buffer->format == HAL_PIXEL_FORMAT_RGB_565) {
++         unsigned short *dst = (unsigned short *)address + (size_t)y * buffer->stride;
++         int x;
++         for (x = 0; x < width; ++x)
++            dst[x] = ((src[x*4] >> 3) << 11) | ((src[x*4+1] >> 2) << 5) | (src[x*4+2] >> 3);
++      } else {
++         memcpy((unsigned char *)address + (size_t)y * buffer->stride * 4, src, (size_t)width * 4);
++      }
++   }
++   result = gralloc->unlock(gralloc, buffer->handle);
++   if (result) {
++      window->cancelBuffer(window, buffer, -1);
++      return EGL_FALSE;
++   }
++   {
++      static unsigned frames;
++      if ((frames++ % 60) == 0) {
++         unsigned nonzero = 0;
++         size_t k;
++         for(k = 0; k < (size_t)width * height * 4; k += 4)
++            if(surface->d2w_readback_pixels[k] || surface->d2w_readback_pixels[k+1] || surface->d2w_readback_pixels[k+2]) ++nonzero;
++         ALOGI("Droid2W readback frame=%u size=%dx%d nonblack=%u glerror=%x", frames, width, height, nonzero, glGetError());
++         ALOGI("D2W pixel first=%u,%u,%u,%u middle=%u,%u,%u,%u", surface->d2w_readback_pixels[0],surface->d2w_readback_pixels[1],surface->d2w_readback_pixels[2],surface->d2w_readback_pixels[3],surface->d2w_readback_pixels[width*height*2],surface->d2w_readback_pixels[width*height*2+1],surface->d2w_readback_pixels[width*height*2+2],surface->d2w_readback_pixels[width*height*2+3]);
++      }
++   }
++   result = window->queueBuffer(window, buffer, -1);
++   return result == 0 ? EGL_TRUE : EGL_FALSE;
++}
++#endif
++
+ 
+ static void egl_current_release(CLIENT_PROCESS_STATE_T *process, EGL_CURRENT_T *current);
+ void egl_gl_flush_callback(bool wait);
+@@ -587,6 +681,44 @@
+ 
+ EGLAPI EGLSurface EGLAPIENTRY eglCreateWindowSurface(EGLDisplay dpy, EGLConfig config, EGLNativeWindowType win, const EGLint *attrib_list)
+ {
++#ifdef ANDROID
++   ANativeWindow *window = (ANativeWindow *)win;
++   CLIENT_THREAD_STATE_T *d2w_thread;
++   CLIENT_PROCESS_STATE_T *d2w_process;
++   int width = 0, height = 0;
++   EGLSurface pbuffer;
++   if (!window || window->query(window, NATIVE_WINDOW_WIDTH, &width) ||
++       window->query(window, NATIVE_WINDOW_HEIGHT, &height) ||
++       width <= 0 || height <= 0 || width > EGL_CONFIG_MAX_WIDTH || height > EGL_CONFIG_MAX_HEIGHT)
++      return EGL_NO_SURFACE;
++   if (native_window_set_buffers_format(window, HAL_PIXEL_FORMAT_RGBA_8888) ||
++       native_window_set_usage(window, GRALLOC_USAGE_SW_WRITE_OFTEN) ||
++       native_window_set_buffers_dimensions(window, width, height))
++      return EGL_NO_SURFACE;
++   const EGLint attrs[] = {EGL_WIDTH, width, EGL_HEIGHT, height, EGL_NONE};
++   pbuffer = eglCreatePbufferSurface(dpy, config, attrs);
++   if (pbuffer == EGL_NO_SURFACE) return pbuffer;
++   if (CLIENT_LOCK_AND_GET_STATES(dpy, &d2w_thread, &d2w_process)) {
++      EGL_SURFACE_T *surface = client_egl_get_surface(d2w_thread, d2w_process, pbuffer);
++      surface->d2w_readback_window = window;
++      window->common.incRef(&window->common);
++      CLIENT_UNLOCK();
++   } else {
++      eglDestroySurface(dpy, pbuffer);
++      return EGL_NO_SURFACE;
++   }
++   {
++      EGLint r,g,b,a,depth,stencil,samples;
++      eglGetConfigAttrib(dpy,config,EGL_RED_SIZE,&r);eglGetConfigAttrib(dpy,config,EGL_GREEN_SIZE,&g);
++      eglGetConfigAttrib(dpy,config,EGL_BLUE_SIZE,&b);eglGetConfigAttrib(dpy,config,EGL_ALPHA_SIZE,&a);
++      eglGetConfigAttrib(dpy,config,EGL_DEPTH_SIZE,&depth);eglGetConfigAttrib(dpy,config,EGL_STENCIL_SIZE,&stencil);
++      eglGetConfigAttrib(dpy,config,EGL_SAMPLES,&samples);
++      ALOGI("Droid2W config=%d RGBA=%d/%d/%d/%d depth=%d stencil=%d samples=%d", (int)config,r,g,b,a,depth,stencil,samples);
++   }
++   ALOGI("Droid2W GPU readback window %dx%d", width, height);
++   return pbuffer;
++#endif
++
+    CLIENT_THREAD_STATE_T *thread;
+    CLIENT_PROCESS_STATE_T *process;
+    EGLSurface result;
+@@ -2266,6 +2398,21 @@
+       thread->error = EGL_SUCCESS;
+ 
+       surface = client_egl_get_surface(thread, process, surf);
++#ifdef ANDROID
++      if (surface && surface->d2w_readback_window) {
++         { static int once; if(!once++) ALOGI("D2W draw/read %p/%p target=%p", thread->opengl.draw, thread->opengl.read, surface); }
++         if (surface != thread->opengl.draw) {
++            thread->error = EGL_BAD_SURFACE;
++            CLIENT_UNLOCK();
++            return EGL_FALSE;
++         }
++         CLIENT_UNLOCK();
++         EGLBoolean ok = d2w_readback_present(surface);
++         if (!ok) CLIENT_GET_THREAD_STATE()->error = EGL_BAD_SURFACE;
++         return ok;
++      }
++#endif
++
+ 
+       vcos_log_trace("eglSwapBuffers get surface %x",(int)surface);
+ 

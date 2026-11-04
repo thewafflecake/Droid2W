@@ -56,9 +56,23 @@ not implemented. The prototype is not enabled in the standard image.
 
 The owner's Minecraft PE 0.14.0 APK loads its ARMv7 native libraries. With the
 software driver it aborts when it cannot create a GLES 2 surface. With the
-experimental driver it loads the GPU library and creates a window surface, but
-the observed game image is black. A playable game and gameplay FPS have not
-been demonstrated. The APK is not distributed with Droid2W.
+experimental driver it loads the GPU library and creates a window surface.
+The app requests an RGB565 native buffer; the first bridge accepted only
+RGBA8888 and discarded these frames. The prototype now converts GPU RGBA pixels
+to the requested RGB565 buffer and queues frames successfully. Both full-frame
+and row-by-row readback were observed advancing. This corrected an output
+format mismatch, not game rendering: the current result is a solid green frame,
+without the Minecraft menu. A playable game and gameplay FPS have not been
+demonstrated. The APK is not distributed with Droid2W.
+
+A warm reboot following the GPU tests stopped at a black HDMI screen and lost
+network connectivity; recovery and repeatability remain under investigation.
+The GPU prototype stays outside the standard image. Increasing `gpu_mem` from
+64 to 128 did not resolve the rendering issue. Returning to 64 was followed by
+a failed boot; causation is not established. Recovery is being tested with the
+previous 128 MiB configuration and a forced software-driver alias before Android
+services start. The diagnostic source patch is retained in
+`experimental/gpu-readback/`; it is a developer checkpoint, not a supported driver.
 
 ## Camera
 
