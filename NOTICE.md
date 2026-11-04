@@ -12,7 +12,7 @@ the root license does not relicense it.
 - Android source revisions are recorded in the AOSP manifest. Android projects
   retain their respective upstream licenses.
 - Raspberry Pi Linux is obtained separately and retains its upstream licenses.
-- Raspberry Pi boot firmware and Broadcom Wi-Fi firmware are fetched separately;
+- Raspberry Pi boot firmware and Broadcom Wi-Fi/Bluetooth firmware are fetched separately;
   their redistribution terms are not replaced by the Droid2W license.
   Fetch scripts retain the relevant upstream license files.
 

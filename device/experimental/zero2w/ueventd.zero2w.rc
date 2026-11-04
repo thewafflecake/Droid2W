@@ -1,3 +1,6 @@
 /dev/graphics/fb0 0660 root graphics
 /dev/binder 0666 root root
 /dev/ashmem 0666 root root
+/dev/snd/* 0660 system audio
+/dev/vchiq 0666 root graphics
+/dev/ttyAMA0 0660 bluetooth bluetooth

@@ -49,3 +49,12 @@ service iprenew_wlan0 /system/bin/dhcpcd -n
     class main
     disabled
     oneshot
+
+# BCM43430A1 power, controlled by libbt-vendor after root init exports it.
+on post-fs-data
+    write /sys/class/gpio/export 42
+    write /sys/class/gpio/gpio42/direction out
+    write /sys/class/gpio/gpio42/value 0
+    chown bluetooth bluetooth /sys/class/gpio/gpio42/value
+    chmod 0660 /sys/class/gpio/gpio42/value
+    mkdir /data/misc/bluedroid 0770 bluetooth net_bt_stack

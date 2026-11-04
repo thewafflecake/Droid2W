@@ -18,12 +18,14 @@ Verified on one physical Zero 2 W during development:
 | Android boot, Launcher and Settings | Working |
 | HDMI output | Working at 1280×720 |
 | Logical Android display | 320×480 tested; configured on the installed system |
-| Graphics | Software GLES 1.x; GPU acceleration not implemented |
+| Graphics | Default software GLES 1.x; experimental hardware tests only |
 | USB keyboard/mouse | Working in USB host mode, reported by hardware tester |
 | USB ADB | Working in peripheral mode |
 | Wi-Fi | Scanning, WPA2 connection, DHCP, DNS and internet tested |
 | ADB over Wi-Fi | Tested, including after reboot; key authentication enabled |
-| Audio, Bluetooth, camera, cellular modem | Not brought up / not validated |
+| HDMI audio | Test tone and stock Music playback confirmed; survives reboot |
+| Bluetooth | Adapter ON and phone discovery tested; pairing/audio untested |
+| Camera, cellular modem | Not brought up / not validated |
 
 These results describe an incrementally updated development card. A clean
 image rebuilt from this repository still needs independent hardware validation.
@@ -44,6 +46,7 @@ power the board through **PWR IN** and connect input devices through USB OTG.
 ## Development
 
 - [Build guide](docs/BUILD.md)
+- [Multimedia development results](docs/MULTIMEDIA.md)
 - [Architecture and known limitations](docs/ARCHITECTURE.md)
 - [Roadmap](docs/ROADMAP.md)
 - [Basic apps and runtime update](docs/RUNTIME-UPDATE.md)

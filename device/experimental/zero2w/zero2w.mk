@@ -4,10 +4,11 @@ $(call inherit-product, frameworks/base/data/keyboards/keyboards.mk)
 $(call inherit-product, frameworks/webview/chromium/chromium.mk)
 
 PRODUCT_PACKAGES += \
+    Bluetooth bluetooth.default libbt-vendor libbluetooth_jni \
     InputDevices Keyguard LatinIME Launcher2 Provision Settings SystemUI \
     Gallery Browser Calculator DeskClock Calendar CalendarProvider Music \
     DocumentsUI ExternalStorageProvider DownloadProvider DownloadProviderUi CertInstaller KeyChain \
-    audio.primary.default audio_policy.default power.default \
+    audio.primary.zero2w audio_policy.default power.default \
     gralloc.default libGLES_android librs_jni local_time.default e2fsck \
     wpa_supplicant wpa_cli dhcpcd dhcpcd-run-hooks 20-dns.conf 95-configured
 
@@ -17,17 +18,19 @@ PRODUCT_COPY_FILES += \
     device/experimental/zero2w/adb_keys:root/adb_keys \
     device/experimental/zero2w/ueventd.zero2w.rc:root/ueventd.zero2w.rc \
     device/experimental/zero2w/fstab.zero2w:root/fstab.zero2w \
+    device/experimental/zero2w/audio_policy.conf:system/etc/audio_policy.conf \
     device/experimental/zero2w/wpa_supplicant.conf:system/etc/wifi/wpa_supplicant.conf \
     external/dhcpcd/android.conf:system/etc/dhcpcd/dhcpcd.conf \
+    frameworks/native/data/etc/android.hardware.bluetooth.xml:system/etc/permissions/android.hardware.bluetooth.xml \
     frameworks/native/data/etc/android.hardware.wifi.xml:system/etc/permissions/android.hardware.wifi.xml \
     frameworks/native/data/etc/android.hardware.usb.host.xml:system/etc/permissions/android.hardware.usb.host.xml
 
 # Built by build-network-kernel.sh for this exact kernel configuration.
 PRODUCT_COPY_FILES += $(foreach file,$(wildcard device/experimental/zero2w/modules/*.ko),$(file):system/lib/modules/$(notdir $(file)))
 PRODUCT_COPY_FILES += $(foreach file,$(wildcard device/experimental/zero2w/firmware/brcm/*),$(file):system/etc/firmware/brcm/$(notdir $(file)))
-PRODUCT_COPY_FILES += $(foreach file,$(wildcard device/experimental/zero2w/firmware/copyright device/experimental/zero2w/firmware/source-revision.txt),$(file):system/etc/firmware/$(notdir $(file)))
+PRODUCT_COPY_FILES += $(foreach file,$(wildcard device/experimental/zero2w/firmware/copyright device/experimental/zero2w/firmware/source-revision.txt device/experimental/zero2w/firmware/bluetooth-copyright device/experimental/zero2w/firmware/bluetooth-source-revision.txt),$(file):system/etc/firmware/$(notdir $(file)))
 
-# Keep framework sound resources complete, even while audio hardware is a stub.
+# Keep framework UI sound resources available to the output HAL.
 PRODUCT_COPY_FILES += $(foreach name,Effect_Tick KeypressStandard KeypressSpacebar KeypressDelete KeypressReturn KeypressInvalid Lock Unlock,frameworks/base/data/sounds/effects/ogg/$(name).ogg:system/media/audio/ui/$(name).ogg)
 
 DEVICE_PACKAGE_OVERLAYS := device/experimental/zero2w/overlay

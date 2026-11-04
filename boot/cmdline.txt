@@ -1,1 +1,1 @@
-console=ttyAMA0,115200 console=tty1 loglevel=7 androidboot.hardware=zero2w androidboot.selinux=permissive g_ffs.functions=adb g_ffs.idVendor=0x18d1 g_ffs.idProduct=0xd002 g_ffs.iManufacturer=Experimental g_ffs.iProduct=Zero2W-ADB g_ffs.iSerialNumber=zero2w-kitkat rootwait
+console=tty1 loglevel=7 androidboot.hardware=zero2w androidboot.selinux=permissive g_ffs.functions=adb g_ffs.idVendor=0x18d1 g_ffs.idProduct=0xd002 g_ffs.iManufacturer=Experimental g_ffs.iProduct=Zero2W-ADB g_ffs.iSerialNumber=zero2w-kitkat rootwait

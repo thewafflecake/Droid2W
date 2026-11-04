@@ -37,8 +37,9 @@ def boot_file(name):
     return subprocess.check_output(['mtype', '-i', str(args.directory / 'boot-fat.img'), '::/' + name])
 
 config = boot_file('config.txt').decode()
-for value in ('framebuffer_swap=0', 'dtoverlay=dwc2,dr_mode=host'):
+for value in ('framebuffer_swap=0', 'dtoverlay=dwc2,dr_mode=host', 'dtparam=audio=on', 'dtparam=krnbt=off'):
     assert value in config, value
+assert 'console=ttyAMA0' not in boot_file('cmdline.txt').decode(), 'UART is reserved for Bluetooth'
 for name, source in [('kernel7.img', root / 'kernel-out/arch/arm/boot/zImage'),
                      ('ramdisk.img', product / 'ramdisk.img')]:
     assert boot_file(name) == source.read_bytes(), name
@@ -63,6 +64,8 @@ for name in ('init.rc', 'init.zero2w.rc', 'init.zero2w.usb.rc'):
 assert not files['adb_keys'][3].strip(), 'Preauthorized ADB key in public ramdisk'
 assert b'ro.adb.secure=1' in files['default.prop'][3]
 assert b'EMULATED_STORAGE_SOURCE /mnt/shell/emulated' in files['init.zero2w.rc'][3]
+assert b'chown bluetooth bluetooth /sys/class/gpio/gpio42/value' in files['init.zero2w.rc'][3]
+assert b'/dev/snd/* 0660 system audio' in files['ueventd.zero2w.rc'][3]
 assert not any('droid2w-update' in name or 'diagnostic' in name for name in files)
 
 def system_file(name):
@@ -71,7 +74,10 @@ def system_file(name):
 prop = system_file('build.prop').decode()
 for value in ('ro.config.size_override=320,480', 'service.adb.tcp.port=5556', 'debug.gralloc.zero2w_pan=1'):
     assert value in prop, value
-for name in ('bin/screencap', 'lib/hw/gralloc.default.so', 'priv-app/Keyguard.apk'):
+for name in ('bin/screencap', 'lib/hw/gralloc.default.so', 'priv-app/Keyguard.apk',
+             'lib/hw/audio.primary.zero2w.so', 'lib/libtinyalsa.so', 'etc/audio_policy.conf',
+             'app/Bluetooth.apk', 'lib/hw/bluetooth.default.so', 'vendor/lib/libbt-vendor.so',
+             'etc/permissions/android.hardware.bluetooth.xml', 'etc/firmware/brcm/BCM43430A1.hcd'):
     assert system_file(name) == (product / 'system' / name).read_bytes(), name
 print('PASS: partition contents, boot profile, ramdisk permissions, ADB authentication, display defaults and updated graphics/Keyguard files')
 print('Fresh image boot on hardware remains unverified.')

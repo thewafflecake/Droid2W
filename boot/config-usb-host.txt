@@ -14,5 +14,8 @@ framebuffer_depth=32
 framebuffer_ignore_alpha=1
 framebuffer_swap=0
 enable_uart=1
-dtoverlay=disable-bt
+dtparam=krnbt=off
 dtoverlay=dwc2,dr_mode=host
+
+# HDMI PCM playback.
+dtparam=audio=on

@@ -81,3 +81,9 @@ CONFIG_BRCMFMAC=m
 CONFIG_BRCMFMAC_SDIO=y
 # CONFIG_BRCMFMAC_USB is not set
 CONFIG_RFKILL=y
+
+# Built-in ALSA output for the legacy HDMI audio firmware service.
+CONFIG_SND=y
+CONFIG_SND_TIMER=y
+CONFIG_SND_PCM=y
+CONFIG_SND_BCM2835=y

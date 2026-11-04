@@ -20,4 +20,5 @@ $(zero2w_egl_alias): $(TARGET_OUT)/lib/egl/libGLES_android.so
 	@mkdir -p $(dir $@)
 	$(hide) ln -sf libGLES_android.so $@
 ALL_DEFAULT_INSTALLED_MODULES += $(zero2w_egl_alias)
+include $(wildcard device/experimental/zero2w/audio/Android.mk)
 endif

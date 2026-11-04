@@ -11,6 +11,8 @@ echo preparing > "$status"
 python3 prepare-device.py --no-authorized-keys
 python3 prepare-android.py
 python3 prepare-runtime.py
+python3 prepare-audio.py
+python3 prepare-bluetooth.py
 python3 prepare-kernel.py
 echo building-kernel > "$status"
 make -C kernel O="$PWD/kernel-out" ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- -j1 zImage dtbs
@@ -30,6 +32,7 @@ for name in ('Gallery', 'Browser', 'Calculator', 'DeskClock', 'Calendar', 'Music
     assert any((p / 'system' / d / (name + '.apk')).is_file() for d in ('app', 'priv-app')), name
 for name in ('cfg80211', 'brcmutil', 'brcmfmac'):
     assert (p / 'system/lib/modules' / (name + '.ko')).is_file(), name
+assert not list((p / 'system').rglob('libGLES_bcm2708.so')), 'Experimental GPU driver in standard image'
 for base in (p / 'data', p / 'root', p / 'system'):
     for name in ('adbkey', 'adbkey.pub', 'accounts.db', 'settings.db'):
         assert not list(base.rglob(name)), 'Personal-data candidate: ' + name

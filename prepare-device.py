@@ -20,6 +20,11 @@ if not (root / 'aosp/build/core/main.mk').is_file():
 target = root / 'aosp/device/experimental/zero2w'
 shutil.copytree(root / 'device/experimental/zero2w', target, dirs_exist_ok=True)
 (target / 'adb_keys').write_text(key + '\n' if key else '')
+# Archives produced on Windows can carry group-writable source permissions.
+# KitKat init rejects writable configuration files in its root filesystem.
+for name in ('init.zero2w.rc', 'init.zero2w.usb.rc', 'ueventd.zero2w.rc',
+             'fstab.zero2w', 'adb_keys'):
+    (target / name).chmod(0o644)
 research = root / 'research'
 research.mkdir(exist_ok=True)
 for name in ('logger-3.16.c', 'logger-3.16.h'):

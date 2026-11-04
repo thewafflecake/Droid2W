@@ -32,7 +32,9 @@ per-interface socket lives in a separate directory. DHCP uses KitKat dhcpcd.
 - The current firmware set lacks regulatory.db; some channels may be unavailable.
 - Old Android lowmemorykiller is absent from this kernel; low-RAM properties
   alone do not establish correct behavior under memory pressure.
-- Audio, Bluetooth, camera and cellular integration remain untested.
+- HDMI playback and Bluetooth discovery work on the development card; pairing,
+  Bluetooth audio, GPIO audio, camera and cellular integration remain untested.
+  See [multimedia results](MULTIMEDIA.md) for the exact test scope.
 - 320×480 is a logical display override, not a physical HDMI mode.
 - SELinux is permissive in the development boot command line.
 - Performance, power consumption and clean-image reproducibility need measurement.

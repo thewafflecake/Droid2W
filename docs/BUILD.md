@@ -31,6 +31,8 @@ git -C kernel checkout 8e1110a580887f4b82303b9354c25d7e2ff5860e
 mkdir -p research
 git clone https://github.com/RPi-Distro/firmware-nonfree.git research/rpi-wifi-firmware
 git -C research/rpi-wifi-firmware checkout c91cd2804cf7463aab913e7247c176049f16bbd6
+git clone https://github.com/RPi-Distro/bluez-firmware.git research/rpi-bluez-firmware
+git -C research/rpi-bluez-firmware checkout cdf61dc691a49ff01a124752bd04194907f0f9cd
 ```
 
 Generate your own ADB key using Android Platform Tools if needed. Only the
@@ -41,6 +43,8 @@ python3 prepare-device.py --adb-public-key "$HOME/.android/adbkey.pub"
 python3 prepare-android.py
 python3 prepare-runtime.py
 python3 prepare-wifi-firmware.py
+python3 prepare-audio.py
+python3 prepare-bluetooth.py
 bash fetch-boot-firmware.sh
 bash build-network-kernel.sh
 bash check-binder-abi.sh
