@@ -65,14 +65,40 @@ format mismatch, not game rendering: the current result is a solid green frame,
 without the Minecraft menu. A playable game and gameplay FPS have not been
 demonstrated. The APK is not distributed with Droid2W.
 
-A warm reboot following the GPU tests stopped at a black HDMI screen and lost
-network connectivity; recovery and repeatability remain under investigation.
+## Recovery and isolated GPU tests, 2026-11-05
+
+The black screen after reboot was traced to `/system/lib/egl/libGLES.so` still
+pointing to the prototype. SurfaceFlinger loaded VideoCore globally, where the
+incomplete native-buffer path cannot compose the system correctly. This was a
+persistent driver-selection error, not evidence that 64 MiB GPU memory was
+insufficient.
+
+The first recovery remount did not clear fs_mgr's block-device read-only flag.
+A static recovery helper cleared `BLKROSET`, remounted the system read/write,
+atomically restored and verified the software alias, then restored read-only
+protection. Framework startup waited for successful verification. The tester
+confirmed Android appeared; ADB confirmed boot completion and PixelFlinger.
+
+The temporary recovery ramdisk was then replaced with the normal ramdisk,
+the prototype library was moved outside the EGL search directory, and GPU
+memory was restored to 64 MiB. A normal warm reboot completed with Wi-Fi ADB,
+PixelFlinger and Bluetooth ON. The recovery helper is no longer installed in
+the active ramdisk. User data and applications were retained.
+
+Subsequent tests use an app-process wrapper and a private `dlopen` redirect;
+no global EGL alias is switched. A native probe under the Minecraft app UID
+passed hardware GLES 2 rendering/readback while SurfaceFlinger remained on
+PixelFlinger. Minecraft also loaded the hardware driver this way. Its queried
+shader compile and program link status values were successful, and its
+viewport was 480x320, but the game still produced the green clear color instead
+of a menu. Screen capture also returned empty output during an active test;
+the software desktop capture recovered after stopping the app. The wrapper
+property is cleared after each launch and the app is stopped after inspection.
+
 The GPU prototype stays outside the standard image. Increasing `gpu_mem` from
-64 to 128 did not resolve the rendering issue. Returning to 64 was followed by
-a failed boot; causation is not established. Recovery is being tested with the
-previous 128 MiB configuration and a forced software-driver alias before Android
-services start. The diagnostic source patch is retained in
-`experimental/gpu-readback/`; it is a developer checkpoint, not a supported driver.
+64 to 128 did not fix game rendering. The patch and isolated-launch checkpoint
+are retained in `experimental/gpu-readback/`; neither is a supported driver.
+A playable game and gameplay FPS remain unverified.
 
 ## Camera
 

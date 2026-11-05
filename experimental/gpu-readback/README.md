@@ -3,7 +3,9 @@
 This prototype is **not part of the default build or alpha.2 image**. It is not
 ready for general use. Do not select it globally for SurfaceFlinger: Android
 native-buffer/EGLImage integration is incomplete. Testing can leave the board
-unresponsive to a warm reboot. Keep a working boot card and physical access.
+unresponsive after reboot if a global alias still selects it. A persistent alias
+caused a black-screen boot during development; recovery has since been verified.
+Keep a working boot card and physical access.
 
 ## Sources and build
 
@@ -62,3 +64,47 @@ previous rejection of every frame. Full-frame readback and frame queueing now
 advance, but the observed screen is a solid green fill with no game menu.
 A playable game has not been demonstrated. Increasing GPU memory to 128 MiB
 provided no improvement. See `../../docs/MULTIMEDIA.md` for hardware-test scope.
+
+## Isolated app-process launch checkpoint
+
+`isolation/` contains the small redirect library and app wrapper tested on this
+KitKat build. The wrapper preloads the redirect only into the application
+process. It redirects `dlopen("/system/lib/egl/libGLES.so", ...)` to a private
+prototype library when the test environment variable is set and the process is
+an app UID. It never changes a system symlink or the system-wide renderer.
+Bionic's special libdl lookup on this release requires `RTLD_DEFAULT`; this is
+not a portable interceptor for arbitrary Android releases.
+
+For a separate development tree, copy `isolation/` to
+`device/experimental/zero2w/gpu-isolation/` and, after the usual environment setup,
+run:
+
+```sh
+make -j1 ONE_SHOT_MAKEFILE=device/experimental/zero2w/gpu-isolation/Android.mk \
+  libd2w_egl_redirect
+```
+
+Keep both the redirect and prototype out of the standard system staging directory
+when building a distributable image. For the tested runtime layout, the private
+files under `/data/local/tmp/zero2w-multimedia/` are:
+
+- `libd2w_egl_redirect.so`: the redirect library.
+- `libGLES_app_test.so`: the separately built readback prototype.
+- `run-minecraft-gpu-isolated.sh`: the supplied wrapper, executable with LF endings.
+
+The legacy prototype also needs its matching `libvc4.so`. Testing used a private
+development installation where that dependency was already available. These
+instructions do not install it or provide a complete automatic deployment.
+
+On the test card, root temporarily set `wrap.com.mojang.minecraftpe` to the
+wrapper path for one app launch. The property was cleared immediately after
+launch, with cleanup in a host-side `finally` block. The software EGL alias and
+SurfaceFlinger renderer were checked before and after. Do not leave the wrapper
+property set, overwrite libraries while the app is running, or place a prototype
+in a global EGL search directory. A reboot clears this nonpersistent wrapper
+property but is not a substitute for cleanup.
+
+The native probe passed this isolated path. Minecraft's shaders compiled and
+linked successfully, but its menu still did not render. Screen capture could
+return empty output while the app was active. This isolation checkpoint improves
+test recovery; it does not make Minecraft playable or finish the GPU port.
