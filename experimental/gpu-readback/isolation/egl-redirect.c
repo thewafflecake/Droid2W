@@ -7,6 +7,11 @@ void *dlopen(const char *path,int flags){
  static void *(*real_dlopen)(const char *,int);
  if(!real_dlopen)real_dlopen=dlsym(RTLD_DEFAULT,"dlopen");
  if(!real_dlopen){ALOGE("Droid2W app redirect: cannot resolve real dlopen");return NULL;}
+ if(getuid()>=10000 && getenv("DROID2W_GPU_TEST") && (flags & 0x1000)) {
+  /* KitKat's linker rejects RTLD_NODELETE used by newer glmark2. */
+  ALOGI("Droid2W app linker compatibility: remove RTLD_NODELETE, flags=%x",flags);
+  flags &= ~0x1000;
+ }
  if(path && getuid()>=10000 && getenv("DROID2W_GPU_TEST") &&
     !strcmp(path,"/system/lib/egl/libGLES.so")){
   ALOGI("Droid2W per-app EGL redirect, uid=%u pid=%d",(unsigned)getuid(),getpid());

@@ -55,6 +55,12 @@ remain unfinished.
 
 ## Observations
 
+Selected glmark2 scenes have since passed this isolated path; see
+[the measurements and test setup](../../docs/GLMARK2.md). The generic wrapper is
+`isolation/run-gpu-test.sh`. The app-only redirect includes a KitKat linker
+workaround for glmark2's `RTLD_NODELETE` request. This does not enable the
+prototype for the system UI.
+
 A VideoCore IV GLES 2 context passed clear/readback and shader triangle tests.
 The native-window red/blue test displayed correctly; its simple clear/copy loop
 ran around 4.8 frames/s. That number is not a gameplay measurement.

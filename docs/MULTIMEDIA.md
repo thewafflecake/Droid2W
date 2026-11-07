@@ -100,6 +100,16 @@ The GPU prototype stays outside the standard image. Increasing `gpu_mem` from
 are retained in `experimental/gpu-readback/`; neither is a supported driver.
 A playable game and gameplay FPS remain unverified.
 
+## glmark2 checkpoint, 2026-11-08
+
+Selected glmark2 GLES 2 scenes now run with VideoCore IV through the isolated
+readback bridge. A captured texture scene contains a rendered 3D cube.
+Short 3-second scenes reported 20–21 FPS; repeated 10-second build/Phong scenes
+reported 15 and 18 FPS. These include CPU copy and software system composition,
+not just GPU work. See [GLMARK2.md](GLMARK2.md) for exact scope and measurements.
+The system renderer and alpha.2 release remain unchanged. Minecraft is removed
+from the development card and its tests are paused.
+
 ## Camera
 
 No camera is connected. Android still uses its camera stub; no working camera
