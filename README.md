@@ -7,7 +7,9 @@ The current implementation targets **AOSP Android 4.4.4 (KitKat)** with a
 configuration, source preparation scripts and build/image assembly tools;
 it does not vendor the full Android or Linux source trees.
 
-![Screenshot](1sc.png)
+<p>
+  <img src="1sc.png" alt="Droid2W screenshot" width="320"> <img src="2sc.png" alt="Droid2W browser displaying XDA Forums" width="320">
+</p>
 
 ## Download
 
