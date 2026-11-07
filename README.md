@@ -9,6 +9,17 @@ it does not vendor the full Android or Linux source trees.
 
 ![Screenshot](1sc.png)
 
+## Download
+
+**[Download Droid2W KitKat alpha 3 for microSD (.img.gz)](https://github.com/thewafflecake/Droid2W/releases/download/kitkat-2026.11.08-alpha.3/zero2w-kitkat-4.4.4-usb-host-experimental.img.gz)**
+
+[Release notes and checksums](https://github.com/thewafflecake/Droid2W/releases/tag/kitkat-2026.11.08-alpha.3)
+· [Flashing instructions](docs/FLASHING.md). Use a microSD of **4 GB or larger**.
+HDMI audio and Bluetooth discovery are included. Graphics in this image remain
+software-rendered; the experimental VideoCore IV bridge is excluded. Cellular
+modem, calls, SMS and mobile data are not implemented. This is an alpha image;
+the exact freshly packaged image has not yet been boot-tested on hardware.
+
 ## Hardware status
 
 Verified on one physical Zero 2 W during development:
@@ -18,14 +29,15 @@ Verified on one physical Zero 2 W during development:
 | Android boot, Launcher and Settings | Working |
 | HDMI output | Working at 1280×720 |
 | Logical Android display | 320×480 tested; configured on the installed system |
-| Graphics | Default software GLES 1.x; experimental hardware tests only |
+| Graphics | Software GLES 1.x in release; isolated VideoCore IV GLES 2 glmark2 tests pass in development |
 | USB keyboard/mouse | Working in USB host mode, reported by hardware tester |
 | USB ADB | Working in peripheral mode |
 | Wi-Fi | Scanning, WPA2 connection, DHCP, DNS and internet tested |
 | ADB over Wi-Fi | Tested, including after reboot; key authentication enabled |
 | HDMI audio | Test tone and stock Music playback confirmed; survives reboot |
 | Bluetooth | Adapter ON and phone discovery tested; pairing/audio untested |
-| Camera, cellular modem | Not brought up / not validated |
+| Camera | Not brought up / not validated |
+| Cellular modem, calls, SMS, mobile data | Not implemented; no modem hardware tested |
 
 These results describe an incrementally updated development card. A clean
 image rebuilt from this repository still needs independent hardware validation.
@@ -39,7 +51,7 @@ The Zero 2 W has one USB controller. Use USB host mode for a keyboard/mouse
 and Wi-Fi for ADB. Use peripheral mode for a direct USB ADB connection.
 An underside USB-A addon uses the same controller.
 
-The default boot profile is peripheral mode. A separate host profile is
+The downloadable image defaults to host mode. A separate peripheral profile is
 provided. Disconnect the computer's USB data cable before booting host mode;
 power the board through **PWR IN** and connect input devices through USB OTG.
 

@@ -28,6 +28,8 @@ devices before connecting the board's USB data port to the computer. USB host
 and USB peripheral modes use the same controller and cannot run simultaneously.
 
 The image is a legacy development prerelease with software graphics and
-permissive SELinux. Audio, Bluetooth, camera and cellular modem are not brought
-up. See each release's notes for whether that exact fresh image has been booted
+permissive SELinux. HDMI audio playback and Bluetooth adapter/discovery are
+implemented; Bluetooth pairing/audio remain unverified. GPIO audio, camera and
+cellular modem support are not implemented. See each release's notes for
+whether that exact fresh image has been booted
 on hardware; successful file checks alone do not demonstrate a successful boot.
